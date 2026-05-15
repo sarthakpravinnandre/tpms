@@ -3,6 +3,7 @@ import { NextAuthOptions } from "next-auth"
 import EmailProvider from "next-auth/providers/email"
 import CredentialsProvider from "next-auth/providers/credentials"
 import prisma from "./prisma"
+import bcrypt from "bcryptjs"
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
@@ -43,16 +44,15 @@ export const authOptions: NextAuthOptions = {
           where: { email: credentials.email },
         })
 
-        // For now, we'll need to implement password hashing/comparison
-        // Since we are migrating, we might want to reset passwords or 
-        // use a custom verification if moving from Supabase's hashed passwords.
-        if (!user) {
+        if (!user || !user.password) {
           return null
         }
 
-        // Placeholder for password check (you should use bcrypt/argon2)
-        // const isPasswordValid = await compare(credentials.password, user.password)
-        // if (!isPasswordValid) return null
+        const isPasswordValid = await bcrypt.compare(credentials.password, user.password)
+        
+        if (!isPasswordValid) {
+          return null
+        }
 
         return {
           id: user.id,

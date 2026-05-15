@@ -45,6 +45,7 @@ model User {
   image           String?
   firstName       String?
   lastName        String?
+  password        String?
   departmentId    String?
   isActive        Boolean   @default(true)
   approvalStatus  String    @default("pending") // pending, approved, rejected

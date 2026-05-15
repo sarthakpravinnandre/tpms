@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "./auth-options"
 import { signIn as nextAuthSignIn, signOut as nextAuthSignOut } from "next-auth/react"
 import prisma from "./prisma"
+import bcrypt from "bcryptjs"
 
 // Server-side authentication functions
 export async function getCurrentUser() {
@@ -73,4 +74,30 @@ export const signInClient = async (email: string) => {
 
 export const signOutClient = async () => {
   return await nextAuthSignOut({ callbackUrl: "/" })
+}
+
+export async function signUp(email: string, password: string, firstName?: string, lastName?: string) {
+  const existingUser = await prisma.user.findUnique({
+    where: { email }
+  })
+
+  if (existingUser) {
+    throw new Error("User already exists")
+  }
+
+  const hashedPassword = await bcrypt.hash(password, 10)
+
+  const user = await prisma.user.create({
+    data: {
+      email,
+      password: hashedPassword,
+      firstName,
+      lastName,
+      name: firstName && lastName ? `${firstName} ${lastName}` : firstName || lastName || null,
+      approvalStatus: "pending",
+      isActive: true,
+    }
+  })
+
+  return { user }
 }
