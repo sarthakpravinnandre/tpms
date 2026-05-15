@@ -1,0 +1,178 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id              String    @id @default(cuid())
+  name            String?
+  email           String?   @unique
+  emailVerified   DateTime?
+  image           String?
+  firstName       String?
+  lastName        String?
+  departmentId    String?
+  isActive        Boolean   @default(true)
+  approvalStatus  String    @default("pending") // pending, approved, rejected
+  approvedBy      String?
+  approvedAt      DateTime?
+  requestedRole   String?
+
+  accounts        Account[]
+  sessions        Session[]
+  
+  department      Department? @relation(fields: [departmentId], references: [id])
+  ownedProjects   Project[]   @relation("ProjectOwner")
+  projectMemberships ProjectTeamMember[]
+  createdTasks    Task[]      @relation("TaskCreator")
+  assignedTasks   Task[]      @relation("TaskAssignee")
+  roles           UserRole[]
+  activityLogs    MonitoringLog[]
+  roleRequests    RoleRequest[] @relation("UserRoleRequest")
+  reviewedRoleRequests RoleRequest[] @relation("RoleRequestReviewer")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Department {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  users       User[]
+  projects    Project[]
+}
+
+model Project {
+  id           String   @id @default(cuid())
+  name         String
+  description  String?
+  ownerId      String
+  departmentId String?
+  status       String   @default("planning")
+  createdAt    DateTime @default(now())
+  endDate      DateTime?
+
+  owner        User                @relation("ProjectOwner", fields: [ownerId], references: [id])
+  department   Department?         @relation(fields: [departmentId], references: [id])
+  teamMembers  ProjectTeamMember[]
+  tasks        Task[]
+}
+
+model ProjectTeamMember {
+  id        String @id @default(cuid())
+  projectId String
+  userId    String
+  role      String
+
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+}
+
+model Task {
+  id          String   @id @default(cuid())
+  projectId   String
+  title       String
+  description String?
+  priority    String   @default("medium")
+  status      String   @default("todo")
+  createdBy   String
+  assignedTo  String?
+  createdAt   DateTime @default(now())
+
+  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  creator     User    @relation("TaskCreator", fields: [createdBy], references: [id])
+  assignee    User?   @relation("TaskAssignee", fields: [assignedTo], references: [id])
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  permissions String[]
+  users       UserRole[]
+}
+
+model UserRole {
+  id     String @id @default(cuid())
+  userId String
+  roleId String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
+}
+
+model Qualification {
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+  level       String?
+}
+
+model MonitoringLog {
+  id         String   @id @default(cuid())
+  userId     String
+  action     String
+  entityType String
+  entityId   String?
+  details    Json?
+  createdAt  DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [id])
+}
+
+model RoleRequest {
+  id                String    @id @default(cuid())
+  userId            String
+  requestedRole     String
+  reasonForRequest  String?
+  status            String    @default("pending")
+  reviewedBy        String?
+  reviewedAt        DateTime?
+  createdAt         DateTime  @default(now())
+
+  user              User      @relation("UserRoleRequest", fields: [userId], references: [id])
+  reviewer          User?     @relation("RoleRequestReviewer", fields: [reviewedBy], references: [id])
+}
