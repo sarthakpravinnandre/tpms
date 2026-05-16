@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
+import bcrypt from "bcryptjs"
+
 
 export async function POST(request: Request) {
   try {
@@ -26,9 +28,12 @@ export async function POST(request: Request) {
     const isDeveloper = requested_role === 'developer'
     const status = isDeveloper ? 'approved' : 'pending'
 
+    const hashedPassword = await bcrypt.hash(password, 10)
+
     const user = await prisma.user.create({
       data: {
         email,
+        password: hashedPassword,
         requestedRole: requested_role,
         approvalStatus: status,
       },
