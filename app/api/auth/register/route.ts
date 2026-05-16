@@ -63,7 +63,12 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json(
-      { message: "User registered successfully", userId: user.id },
+      { 
+        message: isDeveloper 
+          ? "User registered successfully" 
+          : "Sign up successful. Your account is pending admin approval.",
+        userId: user.id 
+      },
       { status: 201 }
     )
   } catch (error: any) {

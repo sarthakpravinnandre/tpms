@@ -48,6 +48,11 @@ export const authOptions: NextAuthOptions = {
           return null
         }
 
+        // Check if user's account is approved
+        if (user.approvalStatus !== "approved") {
+          throw new Error("Account pending admin approval. Please wait for approval before logging in.")
+        }
+
         const isPasswordValid = await bcrypt.compare(credentials.password, user.password)
         
         if (!isPasswordValid) {
