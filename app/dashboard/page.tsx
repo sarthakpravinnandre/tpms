@@ -1,4 +1,3 @@
-import { createClient } from '@/lib/supabase/server'
 import { getCurrentUser } from '@/lib/auth'
 import { getProjects, getTasks } from '@/lib/db'
 import Link from 'next/link'

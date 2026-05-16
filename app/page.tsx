@@ -1,16 +1,14 @@
-import { createClient } from '@/lib/supabase/server'
+import { getServerSession } from "next-auth/next"
+import { authOptions } from "@/lib/auth-options"
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 
 export default async function HomePage() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const session = await getServerSession(authOptions)
 
   // If user is logged in, redirect to dashboard
-  if (user) {
+  if (session?.user) {
     redirect('/dashboard')
   }
 
